@@ -16,6 +16,8 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     @IBOutlet weak var result: UILabel!
     var chosenImg = CIImage()
     
+    @IBOutlet weak var result2: UILabel!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
@@ -34,7 +36,12 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
         if let chosenImg = CIImage(image: image.image!) {
             recImg(image: chosenImg)
         }
+        if let chosenImgSqueeze = CIImage(image: image.image!) {
+            recImgSqueeze(image: chosenImgSqueeze)
+        }
     }
+    
+    // ******* MobileNetV2 BLOCK *********/
     
     func recImg(image: CIImage){
         result.text = "Please wait..."
@@ -53,9 +60,6 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
                 }
             }
                 
-              
-
-    
 }
             let handler = VNImageRequestHandler(ciImage: image)
                           DispatchQueue.global(qos: .userInteractive).async {
@@ -65,4 +69,36 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
 
                 
             }
+        // ******* MobileNetV2 BLOCK *********/
+        // ******* Squeeze BLOCK *********/
+        func recImgSqueeze(image: CIImage){
+            result.text = "Please wait..."
+            if let model = try? VNCoreMLModel(for: SqueezeNet().model){
+                print("squeeeModelling")
+                let request = VNCoreMLRequest(model: model) { (VNReq, Error) in
+                    if let results = VNReq.results as? [VNClassificationObservation]{
+                        if results.count > 0 {
+                            print("squeeze > 0")
+                            let topResult = results.first
+                            print(topResult!.identifier)
+                            DispatchQueue.main.async {
+                                //let level = Int()*100
+                                let confidenceLevel = (topResult?.confidence ?? 0) * 100
+                                let rounded = Int (confidenceLevel * 100) / 100
+                                self.result2.text = "\(rounded) %, it's \(topResult?.identifier ?? "Err")"
+                            
+                        }
+                    }
+                }
+                    
+    }
+                let handler = VNImageRequestHandler(ciImage: image)
+                              DispatchQueue.global(qos: .userInteractive).async {
+                                do { try handler.perform([request])} catch {print("err.")}
+                              }
+                    }
+
+                    
+                }
+            // ******* Squeeze BLOCK *********/
 }
